@@ -1,0 +1,6 @@
+{
+  "name": "Crafted - TradeNet Ireland",
+  "description": "Location-aware social network, trades marketplace, offline pocket toolbox, and stolen gear alert platform for the Irish trades and apprenticeship community.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
