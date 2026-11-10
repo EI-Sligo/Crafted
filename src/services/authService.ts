@@ -104,7 +104,7 @@ export const authService = {
         });
 
         if (error) {
-          console.warn('[Supabase Auth Note] Supabase sign-in failed, falling back to local master login:', error.message);
+          return { success: false, error: error.message };
         } else if (data.user) {
           const userId = data.user.id;
           let profile = await supabaseService.getProfileById(userId);
@@ -116,7 +116,7 @@ export const authService = {
               name: userName,
               handle: `@${userName.toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
               trade: data.user.user_metadata?.trade || 'Electrician',
-              accountType: data.user.user_metadata?.accountType || 'personal',
+              accountType: data.user.user_metadata?.accountType === 'business' ? 'business' : 'personal',
               hasSafePass: Boolean(data.user.user_metadata?.hasSafePass ?? false),
               safePassExpiry: '',
               hasCifBadge: Boolean(data.user.user_metadata?.hasCifBadge),
@@ -231,11 +231,18 @@ export const authService = {
       apprenticePhase: isApprentice ? 1 : undefined,
       trackSolasLogbook: isApprentice ? true : false,
       avatar: '',
-      bio: `${data.name} - Verified ${data.accountType === 'business' ? 'Business Enterprise' : 'Irish Tradesperson'} specializing in ${data.trade}.`,
+      bio: `${data.name} - Verified ${
+        data.accountType === 'business' ? 'Business Enterprise' : 'Irish Tradesperson'
+      } specializing in ${data.trade}.`,
       phone: data.phone || '',
       email: data.email,
       location: data.location,
-      yearsExperience: (data as any).yearsExperience !== undefined ? Math.max(0, Number((data as any).yearsExperience)) : (isApprentice ? 1 : 0),
+      yearsExperience:
+        (data as any).yearsExperience !== undefined
+          ? Math.max(0, Number((data as any).yearsExperience))
+          : isApprentice
+          ? 1
+          : 0,
       hasSafePass: false,
       safePassExpiry: '',
       solasId: isApprentice ? `APP-IE-${Math.floor(100000 + Math.random() * 900000)}` : undefined,
@@ -261,21 +268,39 @@ export const authService = {
             data: {
               name: data.name,
               trade: data.trade,
+              accountType: data.accountType === 'business' ? 'business' : 'individual',
+              phone: data.phone || '',
+              town: data.location?.town || 'Dublin City',
+              county: data.location?.county || 'Dublin',
+              location: data.location,
+              isApprentice,
             },
           },
         });
 
-        if (!error && authData.user) {
+        if (error) {
+          throw error;
+        }
+
+        if (authData.user) {
           newUser.id = authData.user.id;
+        }
+
+        // Only upsert from the browser if Supabase returned an immediate active session.
+        // If Email Verification is ON, authData.session is null until they click the email link,
+        // so the PostgreSQL trigger (handle_new_user) creates the profile row automatically!
+        if (authData.session) {
+          await supabaseService.upsertProfile(newUser);
+        } else {
+          storageService.updateCurrentUser(newUser);
         }
       } catch (err) {
         console.warn('[Supabase Auth] Registration error, proceeding with local profile:', err);
       }
+    } else {
+      await supabaseService.upsertProfile(newUser);
     }
 
-    // 2. Upsert profile in Supabase & update local storage
-    await supabaseService.upsertProfile(newUser);
-    
     this.setSession({
       isAuthenticated: true,
       userId: newUser.id,

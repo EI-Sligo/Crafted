@@ -47,6 +47,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   // Registration state
   const [regName, setRegName] = useState('');
   const [regEmail, setRegEmail] = useState('');
+  const [regPassword, setRegPassword] = useState('');
   const [regPhone, setRegPhone] = useState('');
   const [regTrade, setRegTrade] = useState<TradeType>('Electrician');
   const [regAccountType, setRegAccountType] = useState<'personal' | 'business'>('personal');
@@ -93,6 +94,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     const newUser = await authService.registerNewUser({
       name: regName.trim(),
       email: regEmail.trim(),
+      password: regPassword.trim() || undefined,
       trade: regTrade,
       accountType: regAccountType,
       businessCategory: regAccountType === 'business' ? regBusinessCategory : undefined,
@@ -276,6 +278,23 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                     onChange={(e) => setRegEmail(e.target.value)}
                     placeholder="connor@trades.ie"
                     className={`w-full px-3 py-2.5 rounded-xl border text-xs focus:outline-none focus:border-amber-500 ${
+                      isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
+                    }`}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold mb-1">Create Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-3 w-4 h-4 text-slate-400" />
+                  <input
+                    type="password"
+                    value={regPassword}
+                    onChange={(e) => setRegPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className={`w-full pl-10 pr-3 py-2.5 rounded-xl border text-xs focus:outline-none focus:border-amber-500 ${
                       isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
                     }`}
                     required
